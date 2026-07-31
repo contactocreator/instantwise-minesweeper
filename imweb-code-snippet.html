@@ -1,0 +1,870 @@
+<!--
+Imweb code widget snippet.
+Before pasting into Imweb, replace the 3 data-img-* URLs below with your uploaded file URLs.
+-->
+<section
+  id="iwms-root-20260731"
+  data-img-560="assets/espresso-560.webp"
+  data-img-960="assets/espresso-960.webp"
+  data-img-1600="assets/espresso-1600.webp"
+>
+  <div class="iwms-site">
+    <header class="iwms-masthead">
+      <nav class="iwms-nav" aria-label="Main">
+        <a href="#iwms-board-anchor">SHOP</a>
+        <a href="#iwms-board-anchor">ARCHIVE</a>
+        <a href="#iwms-controls-anchor">ABOUT</a>
+      </nav>
+    </header>
+
+    <main class="iwms-main">
+      <section class="iwms-board-section" id="iwms-board-anchor" aria-labelledby="iwms-title">
+        <h2 id="iwms-title" class="iwms-sr-only">Playable minesweeper</h2>
+        <div class="iwms-board-frame">
+          <picture class="iwms-board-image">
+            <source class="iwms-source" type="image/webp">
+            <img
+              class="iwms-image"
+              alt="Espresso cup image covered by a playable minesweeper grid"
+              width="1600"
+              height="946"
+              decoding="async"
+              fetchpriority="high"
+            >
+          </picture>
+          <div class="iwms-board" aria-label="Minesweeper board"></div>
+        </div>
+      </section>
+
+      <section class="iwms-utility" id="iwms-controls-anchor" aria-labelledby="iwms-controls-title">
+        <h2 id="iwms-controls-title" class="iwms-sr-only">Game controls</h2>
+        <div class="iwms-utility-row">
+          <button class="iwms-button iwms-reset" type="button">RESET</button>
+          <button class="iwms-button iwms-flag-toggle" type="button" aria-pressed="false">FLAG OFF</button>
+          <span class="iwms-value">MINES <strong class="iwms-mine-count">38</strong></span>
+          <span class="iwms-value">TIME <strong class="iwms-time-count">000</strong></span>
+          <span class="iwms-value">STATE <strong class="iwms-state-count">READY</strong></span>
+        </div>
+        <p class="iwms-status" aria-live="polite">OPEN A TILE. RIGHT CLICK TO FLAG.</p>
+      </section>
+    </main>
+
+    <noscript>
+      <p class="iwms-noscript">JAVASCRIPT IS REQUIRED FOR THE GAME.</p>
+    </noscript>
+  </div>
+</section>
+
+<style>
+  #iwms-root-20260731 {
+    --iwms-paper: #ffffff;
+    --iwms-ink: #000000;
+    --iwms-acid: #27ff00;
+    --iwms-mine-tile: rgba(248, 248, 248, 0.96);
+    --iwms-vh: 1vh;
+    --iwms-mine-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='8.6' fill='%23111111'/%3E%3Ccircle cx='12' cy='12' r='5.1' fill='%23f3f3f3'/%3E%3Ccircle cx='12' cy='12' r='2.95' fill='%23111111'/%3E%3Cg fill='%23111111'%3E%3Ccircle cx='12' cy='2.7' r='1.55'/%3E%3Ccircle cx='12' cy='21.3' r='1.55'/%3E%3Ccircle cx='2.7' cy='12' r='1.55'/%3E%3Ccircle cx='21.3' cy='12' r='1.55'/%3E%3Ccircle cx='5.1' cy='5.1' r='1.35'/%3E%3Ccircle cx='18.9' cy='5.1' r='1.35'/%3E%3Ccircle cx='5.1' cy='18.9' r='1.35'/%3E%3Ccircle cx='18.9' cy='18.9' r='1.35'/%3E%3C/g%3E%3C/svg%3E");
+    position: relative;
+    left: 50%;
+    right: 50%;
+    width: 100vw;
+    max-width: 100vw;
+    margin-left: -50vw;
+    margin-right: -50vw;
+    background: var(--iwms-paper);
+    color: var(--iwms-ink);
+    overflow: hidden;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  #iwms-root-20260731,
+  #iwms-root-20260731 *,
+  #iwms-root-20260731 *::before,
+  #iwms-root-20260731 *::after {
+    box-sizing: border-box;
+  }
+
+  #iwms-root-20260731 .iwms-site {
+    min-height: calc(var(--iwms-vh) * 100);
+    background: var(--iwms-paper);
+  }
+
+  #iwms-root-20260731 .iwms-main {
+    display: block;
+  }
+
+  #iwms-root-20260731 .iwms-masthead {
+    padding: 0 18px;
+  }
+
+  #iwms-root-20260731 .iwms-nav {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: end;
+    gap: 12px;
+  }
+
+  #iwms-root-20260731 .iwms-nav a {
+    display: block;
+    padding: 14px 0 10px;
+    color: inherit;
+    text-decoration: none;
+    font-size: clamp(3rem, 6.1vw, 6.2rem);
+    font-weight: 800;
+    letter-spacing: -0.08em;
+    line-height: 0.84;
+  }
+
+  #iwms-root-20260731 .iwms-nav a:nth-child(2) {
+    text-align: center;
+  }
+
+  #iwms-root-20260731 .iwms-nav a:nth-child(3) {
+    text-align: right;
+  }
+
+  #iwms-root-20260731 .iwms-board-section {
+    padding: 0;
+  }
+
+  #iwms-root-20260731 .iwms-board-frame {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1920 / 1135;
+    overflow: hidden;
+    background: #0c0c0c;
+  }
+
+  #iwms-root-20260731 .iwms-board-image,
+  #iwms-root-20260731 .iwms-board-image img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  #iwms-root-20260731 .iwms-board-image img {
+    display: block;
+    object-fit: cover;
+    max-width: none;
+  }
+
+  #iwms-root-20260731 .iwms-board {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    grid-template-columns: repeat(var(--iwms-columns), 1fr);
+    grid-template-rows: repeat(var(--iwms-rows), 1fr);
+    touch-action: manipulation;
+  }
+
+  #iwms-root-20260731 .iwms-cell {
+    position: relative;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    appearance: none;
+    -webkit-appearance: none;
+    background: var(--iwms-acid);
+    box-shadow: inset 0 0 0 0.4px rgba(0, 0, 0, 0.08);
+    cursor: pointer;
+  }
+
+  #iwms-root-20260731 .iwms-cell[data-state="flagged"],
+  #iwms-root-20260731 .iwms-cell[data-state="mine"],
+  #iwms-root-20260731 .iwms-cell[data-state="wrong"] {
+    background: var(--iwms-mine-tile);
+  }
+
+  #iwms-root-20260731 .iwms-cell[data-state="flagged"]::before,
+  #iwms-root-20260731 .iwms-cell[data-state="mine"]::before,
+  #iwms-root-20260731 .iwms-cell[data-state="wrong"]::before {
+    content: "";
+    position: absolute;
+    inset: 24%;
+    background-image: var(--iwms-mine-icon);
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: contain;
+  }
+
+  #iwms-root-20260731 .iwms-cell[data-state="revealed"] {
+    background: transparent;
+    box-shadow: none;
+  }
+
+  #iwms-root-20260731 .iwms-cell[data-state="revealed"][data-count]:not([data-count="0"])::after {
+    content: attr(data-count);
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    font-size: clamp(0.48rem, 0.68vw, 0.78rem);
+    font-weight: 800;
+    line-height: 1;
+    text-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.65),
+      0 0 8px rgba(255, 255, 255, 0.4);
+  }
+
+  #iwms-root-20260731 .iwms-cell[data-state="revealed"][data-count="1"]::after { color: #0058d8; }
+  #iwms-root-20260731 .iwms-cell[data-state="revealed"][data-count="2"]::after { color: #0f8a28; }
+  #iwms-root-20260731 .iwms-cell[data-state="revealed"][data-count="3"]::after { color: #c12929; }
+  #iwms-root-20260731 .iwms-cell[data-state="revealed"][data-count="4"]::after { color: #3a28b7; }
+  #iwms-root-20260731 .iwms-cell[data-state="revealed"][data-count="5"]::after { color: #8b3414; }
+  #iwms-root-20260731 .iwms-cell[data-state="revealed"][data-count="6"]::after { color: #17727a; }
+  #iwms-root-20260731 .iwms-cell[data-state="revealed"][data-count="7"]::after { color: #1a1a1a; }
+  #iwms-root-20260731 .iwms-cell[data-state="revealed"][data-count="8"]::after { color: #606060; }
+
+  #iwms-root-20260731 .iwms-cell[data-state="mine"][data-exploded="true"] {
+    background: #ff4e4e;
+  }
+
+  #iwms-root-20260731 .iwms-cell:focus-visible {
+    outline: 1px solid #000;
+    outline-offset: -1px;
+  }
+
+  #iwms-root-20260731 .iwms-utility {
+    padding: 12px 18px 0;
+  }
+
+  #iwms-root-20260731 .iwms-utility-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.25rem 1.8rem;
+    align-items: center;
+  }
+
+  #iwms-root-20260731 .iwms-button,
+  #iwms-root-20260731 .iwms-value,
+  #iwms-root-20260731 .iwms-status {
+    font-size: 0.76rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    line-height: 1.25;
+  }
+
+  #iwms-root-20260731 .iwms-button {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+  }
+
+  #iwms-root-20260731 .iwms-button[aria-pressed="true"] {
+    color: #118d00;
+  }
+
+  #iwms-root-20260731 .iwms-value strong {
+    font-weight: 800;
+  }
+
+  #iwms-root-20260731 .iwms-status {
+    margin: 0.7rem 0 0;
+  }
+
+  #iwms-root-20260731 .iwms-noscript {
+    margin: 12px 18px 0;
+    font-size: 0.76rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  #iwms-root-20260731 .iwms-sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  @media (max-width: 720px) {
+    #iwms-root-20260731 .iwms-site {
+      height: calc(var(--iwms-vh) * 100);
+      min-height: calc(var(--iwms-vh) * 100);
+      display: grid;
+      grid-template-rows: auto 1fr;
+    }
+
+    #iwms-root-20260731 .iwms-masthead {
+      padding: calc(env(safe-area-inset-top) + 2px) 10px 0;
+    }
+
+    #iwms-root-20260731 .iwms-nav {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0;
+    }
+
+    #iwms-root-20260731 .iwms-nav a {
+      padding: 10px 0 6px;
+      min-width: 0;
+      font-size: clamp(0.72rem, 3.8vw, 0.88rem);
+      letter-spacing: -0.08em;
+      line-height: 0.82;
+    }
+
+    #iwms-root-20260731 .iwms-main {
+      min-height: 0;
+      display: grid;
+      grid-template-rows: minmax(0, 1fr) auto;
+    }
+
+    #iwms-root-20260731 .iwms-board-section,
+    #iwms-root-20260731 .iwms-board-frame {
+      min-height: 0;
+    }
+
+    #iwms-root-20260731 .iwms-board-frame {
+      height: 100%;
+      aspect-ratio: auto;
+    }
+
+    #iwms-root-20260731 .iwms-utility {
+      padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
+    }
+
+    #iwms-root-20260731 .iwms-utility-row {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 0.35rem 0.55rem;
+      align-items: start;
+    }
+
+    #iwms-root-20260731 .iwms-button,
+    #iwms-root-20260731 .iwms-value,
+    #iwms-root-20260731 .iwms-status {
+      font-size: 0.56rem;
+      letter-spacing: 0.08em;
+      line-height: 1.12;
+    }
+
+    #iwms-root-20260731 .iwms-button,
+    #iwms-root-20260731 .iwms-value {
+      display: block;
+      min-width: 0;
+    }
+
+    #iwms-root-20260731 .iwms-value strong {
+      display: block;
+    }
+
+    #iwms-root-20260731 .iwms-status {
+      margin: 0.5rem 0 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    #iwms-root-20260731 .iwms-site *,
+    #iwms-root-20260731 .iwms-site *::before,
+    #iwms-root-20260731 .iwms-site *::after {
+      animation: none !important;
+      transition: none !important;
+    }
+  }
+</style>
+
+<script>
+  (function () {
+    var root = document.getElementById("iwms-root-20260731");
+
+    if (!root || root.dataset.iwmsInit === "true") {
+      return;
+    }
+
+    root.dataset.iwmsInit = "true";
+
+    var mobileQuery = window.matchMedia("(max-width: 720px)");
+    var boardElement = root.querySelector(".iwms-board");
+    var mineCountElement = root.querySelector(".iwms-mine-count");
+    var timeCountElement = root.querySelector(".iwms-time-count");
+    var stateCountElement = root.querySelector(".iwms-state-count");
+    var statusLineElement = root.querySelector(".iwms-status");
+    var restartButton = root.querySelector(".iwms-reset");
+    var flagModeButton = root.querySelector(".iwms-flag-toggle");
+    var imageElement = root.querySelector(".iwms-image");
+    var sourceElement = root.querySelector(".iwms-source");
+
+    var image560 = root.dataset.img560;
+    var image960 = root.dataset.img960;
+    var image1600 = root.dataset.img1600;
+
+    sourceElement.srcset = image560 + " 560w, " + image960 + " 960w, " + image1600 + " 1600w";
+    imageElement.src = image1600;
+    imageElement.srcset = sourceElement.srcset;
+    imageElement.sizes = "100vw";
+
+    function updateViewportHeight() {
+      root.style.setProperty("--iwms-vh", (window.innerHeight * 0.01) + "px");
+    }
+
+    updateViewportHeight();
+    window.addEventListener("resize", updateViewportHeight, { passive: true });
+    window.addEventListener("orientationchange", updateViewportHeight, { passive: true });
+
+    var config = getBoardConfig();
+    var totalCells = config.columns * config.rows;
+
+    var state = {
+      cells: [],
+      firstMove: true,
+      gameOver: false,
+      cleared: false,
+      revealed: 0,
+      flagged: 0,
+      seconds: 0,
+      timerId: 0,
+      flagMode: false
+    };
+
+    function getBoardConfig() {
+      if (mobileQuery.matches) {
+        return {
+          key: "compact",
+          columns: 18,
+          rows: 11,
+          mines: 34
+        };
+      }
+
+      return {
+        key: "wide",
+        columns: 30,
+        rows: 18,
+        mines: 84
+      };
+    }
+
+    function randomBelow(max) {
+      if (window.crypto && typeof window.crypto.getRandomValues === "function") {
+        var values = new Uint32Array(1);
+        var limit = Math.floor(0xffffffff / max) * max;
+        var value = 0;
+
+        do {
+          window.crypto.getRandomValues(values);
+          value = values[0];
+        } while (value >= limit);
+
+        return value % max;
+      }
+
+      return Math.floor(Math.random() * max);
+    }
+
+    function getNeighbors(index) {
+      var neighbors = [];
+      var row = Math.floor(index / config.columns);
+      var column = index % config.columns;
+
+      for (var rowOffset = -1; rowOffset <= 1; rowOffset += 1) {
+        for (var columnOffset = -1; columnOffset <= 1; columnOffset += 1) {
+          if (rowOffset === 0 && columnOffset === 0) {
+            continue;
+          }
+
+          var nextRow = row + rowOffset;
+          var nextColumn = column + columnOffset;
+
+          if (nextRow < 0 || nextRow >= config.rows || nextColumn < 0 || nextColumn >= config.columns) {
+            continue;
+          }
+
+          neighbors.push(nextRow * config.columns + nextColumn);
+        }
+      }
+
+      return neighbors;
+    }
+
+    function formatTime(seconds) {
+      return String(Math.min(seconds, 999)).padStart(3, "0");
+    }
+
+    function stopTimer() {
+      if (state.timerId) {
+        window.clearInterval(state.timerId);
+        state.timerId = 0;
+      }
+    }
+
+    function startTimer() {
+      stopTimer();
+      state.timerId = window.setInterval(function () {
+        state.seconds += 1;
+        timeCountElement.textContent = formatTime(state.seconds);
+      }, 1000);
+    }
+
+    function describeCell(cell) {
+      if (cell.flagged) {
+        return "Flagged tile";
+      }
+
+      if (!cell.revealed) {
+        return "Hidden tile";
+      }
+
+      if (cell.mine) {
+        return "Mine";
+      }
+
+      if (cell.adjacent > 0) {
+        return "Adjacent mines " + cell.adjacent;
+      }
+
+      return "Empty tile";
+    }
+
+    function setStatus(message) {
+      statusLineElement.textContent = message;
+    }
+
+    function updateHud() {
+      mineCountElement.textContent = String(config.mines - state.flagged);
+      timeCountElement.textContent = formatTime(state.seconds);
+
+      if (state.cleared) {
+        stateCountElement.textContent = "CLEAR";
+      } else if (state.gameOver) {
+        stateCountElement.textContent = "BOOM";
+      } else if (state.firstMove) {
+        stateCountElement.textContent = "READY";
+      } else {
+        stateCountElement.textContent = "PLAY";
+      }
+    }
+
+    function renderCell(cell) {
+      var element = cell.element;
+
+      if (cell.mine && cell.revealed) {
+        element.dataset.state = "mine";
+        element.dataset.exploded = cell.exploded ? "true" : "false";
+        element.removeAttribute("data-count");
+      } else if (cell.wrongFlag) {
+        element.dataset.state = "wrong";
+        element.removeAttribute("data-count");
+        element.removeAttribute("data-exploded");
+      } else if (cell.flagged) {
+        element.dataset.state = "flagged";
+        element.removeAttribute("data-count");
+        element.removeAttribute("data-exploded");
+      } else if (cell.revealed) {
+        element.dataset.state = "revealed";
+
+        if (cell.adjacent > 0) {
+          element.dataset.count = String(cell.adjacent);
+        } else {
+          element.removeAttribute("data-count");
+        }
+
+        element.removeAttribute("data-exploded");
+      } else {
+        element.dataset.state = "hidden";
+        element.removeAttribute("data-count");
+        element.removeAttribute("data-exploded");
+      }
+
+      element.setAttribute("aria-label", describeCell(cell));
+    }
+
+    function expandFrom(startIndex) {
+      var queue = [startIndex];
+      var seen = new Set(queue);
+
+      while (queue.length > 0) {
+        var index = queue.pop();
+        var cell = state.cells[index];
+
+        if (!cell || cell.flagged || cell.mine) {
+          continue;
+        }
+
+        if (!cell.revealed) {
+          cell.revealed = true;
+          state.revealed += 1;
+          renderCell(cell);
+        }
+
+        if (cell.adjacent !== 0) {
+          continue;
+        }
+
+        var neighbors = getNeighbors(index);
+
+        for (var i = 0; i < neighbors.length; i += 1) {
+          var nextIndex = neighbors[i];
+          var nextCell = state.cells[nextIndex];
+
+          if (!nextCell.flagged && !nextCell.mine && !seen.has(nextIndex)) {
+            seen.add(nextIndex);
+            queue.push(nextIndex);
+          }
+        }
+      }
+    }
+
+    function finishAsLost(explodedIndex) {
+      state.gameOver = true;
+      stopTimer();
+
+      for (var index = 0; index < state.cells.length; index += 1) {
+        var cell = state.cells[index];
+
+        if (cell.mine) {
+          cell.revealed = true;
+          cell.exploded = index === explodedIndex;
+        } else if (cell.flagged) {
+          cell.wrongFlag = true;
+        }
+
+        renderCell(cell);
+      }
+
+      setStatus("BOOM. RESET TO PLAY AGAIN.");
+      updateHud();
+    }
+
+    function finishAsWon() {
+      state.cleared = true;
+      stopTimer();
+
+      for (var index = 0; index < state.cells.length; index += 1) {
+        var cell = state.cells[index];
+
+        if (cell.mine && !cell.flagged) {
+          cell.flagged = true;
+          state.flagged += 1;
+        }
+
+        renderCell(cell);
+      }
+
+      setStatus("CLEAR. THE IMAGE IS FULLY OPEN.");
+      updateHud();
+    }
+
+    function checkForClear() {
+      if (state.revealed === totalCells - config.mines) {
+        finishAsWon();
+      }
+    }
+
+    function plantMines(safeIndex) {
+      var blocked = new Set([safeIndex].concat(getNeighbors(safeIndex)));
+      var candidates = [];
+
+      for (var index = 0; index < totalCells; index += 1) {
+        if (!blocked.has(index)) {
+          candidates.push(index);
+        }
+      }
+
+      for (var swapFrom = candidates.length - 1; swapFrom > 0; swapFrom -= 1) {
+        var swapTo = randomBelow(swapFrom + 1);
+        var temporary = candidates[swapFrom];
+        candidates[swapFrom] = candidates[swapTo];
+        candidates[swapTo] = temporary;
+      }
+
+      for (var mineIndex = 0; mineIndex < config.mines; mineIndex += 1) {
+        state.cells[candidates[mineIndex]].mine = true;
+      }
+
+      for (var cellIndex = 0; cellIndex < state.cells.length; cellIndex += 1) {
+        if (state.cells[cellIndex].mine) {
+          continue;
+        }
+
+        var count = 0;
+        var neighbors = getNeighbors(cellIndex);
+
+        for (var neighborIndex = 0; neighborIndex < neighbors.length; neighborIndex += 1) {
+          if (state.cells[neighbors[neighborIndex]].mine) {
+            count += 1;
+          }
+        }
+
+        state.cells[cellIndex].adjacent = count;
+      }
+    }
+
+    function revealCell(index) {
+      var cell = state.cells[index];
+
+      if (!cell || cell.flagged || cell.revealed || state.gameOver || state.cleared) {
+        return;
+      }
+
+      if (state.firstMove) {
+        plantMines(index);
+        state.firstMove = false;
+        startTimer();
+        setStatus("PLAYING. OPEN CELLS AND AVOID MINES.");
+      }
+
+      if (cell.mine) {
+        finishAsLost(index);
+        return;
+      }
+
+      expandFrom(index);
+      checkForClear();
+      updateHud();
+    }
+
+    function toggleFlag(index) {
+      var cell = state.cells[index];
+
+      if (!cell || cell.revealed || state.gameOver || state.cleared) {
+        return;
+      }
+
+      cell.flagged = !cell.flagged;
+      state.flagged += cell.flagged ? 1 : -1;
+      renderCell(cell);
+      updateHud();
+    }
+
+    function handleCellAction(index, forceFlagMode) {
+      if (forceFlagMode || state.flagMode) {
+        toggleFlag(index);
+        return;
+      }
+
+      revealCell(index);
+    }
+
+    function setFlagMode(active) {
+      state.flagMode = active;
+      flagModeButton.setAttribute("aria-pressed", String(active));
+      flagModeButton.textContent = active ? "FLAG ON" : "FLAG OFF";
+      setStatus(active ? "FLAG MODE ON." : "FLAG MODE OFF.");
+    }
+
+    function buildBoard() {
+      boardElement.style.setProperty("--iwms-columns", String(config.columns));
+      boardElement.style.setProperty("--iwms-rows", String(config.rows));
+      boardElement.replaceChildren();
+      state.cells = [];
+
+      var fragment = document.createDocumentFragment();
+
+      for (var index = 0; index < totalCells; index += 1) {
+        var button = document.createElement("button");
+        button.type = "button";
+        button.className = "iwms-cell";
+        button.dataset.index = String(index);
+        button.setAttribute("aria-label", "Hidden tile");
+
+        var cell = {
+          index: index,
+          mine: false,
+          revealed: false,
+          flagged: false,
+          wrongFlag: false,
+          exploded: false,
+          adjacent: 0,
+          element: button
+        };
+
+        state.cells.push(cell);
+        fragment.appendChild(button);
+      }
+
+      boardElement.appendChild(fragment);
+
+      for (var renderIndex = 0; renderIndex < state.cells.length; renderIndex += 1) {
+        renderCell(state.cells[renderIndex]);
+      }
+    }
+
+    function resetBoard() {
+      config = getBoardConfig();
+      totalCells = config.columns * config.rows;
+      stopTimer();
+      state.firstMove = true;
+      state.gameOver = false;
+      state.cleared = false;
+      state.revealed = 0;
+      state.flagged = 0;
+      state.seconds = 0;
+      state.flagMode = false;
+      buildBoard();
+      setFlagMode(false);
+      setStatus("OPEN A TILE. RIGHT CLICK TO FLAG.");
+      updateHud();
+    }
+
+    boardElement.addEventListener("click", function (event) {
+      var button = event.target.closest(".iwms-cell");
+
+      if (!button) {
+        return;
+      }
+
+      handleCellAction(Number(button.dataset.index), false);
+    });
+
+    boardElement.addEventListener("contextmenu", function (event) {
+      var button = event.target.closest(".iwms-cell");
+
+      if (!button) {
+        return;
+      }
+
+      event.preventDefault();
+      handleCellAction(Number(button.dataset.index), true);
+    });
+
+    boardElement.addEventListener("keydown", function (event) {
+      var button = event.target.closest(".iwms-cell");
+
+      if (!button) {
+        return;
+      }
+
+      var index = Number(button.dataset.index);
+
+      if (event.key === "f" || event.key === "F") {
+        event.preventDefault();
+        toggleFlag(index);
+      }
+
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        handleCellAction(index, false);
+      }
+    });
+
+    restartButton.addEventListener("click", resetBoard);
+    flagModeButton.addEventListener("click", function () {
+      setFlagMode(!state.flagMode);
+    });
+
+    if (typeof mobileQuery.addEventListener === "function") {
+      mobileQuery.addEventListener("change", function () {
+        var nextConfig = getBoardConfig();
+
+        if (nextConfig.key !== config.key) {
+          resetBoard();
+        }
+      });
+    }
+
+    resetBoard();
+  })();
+</script>

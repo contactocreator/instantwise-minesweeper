@@ -1,0 +1,881 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="레퍼런스 무드의 평면 지뢰찾기 웹사이트">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="color-scheme" content="light">
+  <title>Instantwise Minesweeper</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%23ffffff'/%3E%3Crect x='0' y='0' width='32' height='32' fill='%2327ff00'/%3E%3Crect x='32' y='32' width='32' height='32' fill='%2327ff00'/%3E%3C/svg%3E">
+  <link
+    rel="preload"
+    as="image"
+    href="assets/espresso-1600.webp"
+    imagesrcset="assets/espresso-560.webp 560w, assets/espresso-960.webp 960w, assets/espresso-1600.webp 1600w"
+    imagesizes="100vw"
+  >
+  <style>
+    :root {
+      --paper: #ffffff;
+      --ink: #000000;
+      --acid: #27ff00;
+      --mine-tile: rgba(248, 248, 248, 0.96);
+      --mine-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='8.6' fill='%23111111'/%3E%3Ccircle cx='12' cy='12' r='5.1' fill='%23f3f3f3'/%3E%3Ccircle cx='12' cy='12' r='2.95' fill='%23111111'/%3E%3Cg fill='%23111111'%3E%3Ccircle cx='12' cy='2.7' r='1.55'/%3E%3Ccircle cx='12' cy='21.3' r='1.55'/%3E%3Ccircle cx='2.7' cy='12' r='1.55'/%3E%3Ccircle cx='21.3' cy='12' r='1.55'/%3E%3Ccircle cx='5.1' cy='5.1' r='1.35'/%3E%3Ccircle cx='18.9' cy='5.1' r='1.35'/%3E%3Ccircle cx='5.1' cy='18.9' r='1.35'/%3E%3Ccircle cx='18.9' cy='18.9' r='1.35'/%3E%3C/g%3E%3C/svg%3E");
+      --board-ratio: 1920 / 1135;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: auto;
+    }
+
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    img {
+      display: block;
+      max-width: 100%;
+    }
+
+    button,
+    a {
+      color: inherit;
+      font: inherit;
+      text-decoration: none;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .site {
+      width: min(100%, 2048px);
+      margin: 0 auto;
+      padding: 0 0 2.5rem;
+    }
+
+    main {
+      display: block;
+    }
+
+    .masthead {
+      padding: 0 18px;
+    }
+
+    .masthead__nav {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      align-items: end;
+      gap: 12px;
+    }
+
+    .masthead__nav a {
+      display: block;
+      padding: 14px 0 10px;
+      font-size: clamp(3rem, 6.1vw, 6.2rem);
+      font-weight: 800;
+      letter-spacing: -0.08em;
+      line-height: 0.84;
+    }
+
+    .masthead__nav a:nth-child(2) {
+      text-align: center;
+    }
+
+    .masthead__nav a:nth-child(3) {
+      text-align: right;
+    }
+
+    .board-section {
+      padding: 0;
+    }
+
+    .board-frame {
+      position: relative;
+      width: 100%;
+      aspect-ratio: var(--board-ratio);
+      overflow: hidden;
+      background: #0c0c0c;
+    }
+
+    .board-image,
+    .board-image img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    .board-image img {
+      object-fit: cover;
+    }
+
+    .board {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      grid-template-columns: repeat(var(--columns), 1fr);
+      grid-template-rows: repeat(var(--rows), 1fr);
+      touch-action: manipulation;
+    }
+
+    .cell {
+      position: relative;
+      margin: 0;
+      padding: 0;
+      border: 0;
+      border-radius: 0;
+      appearance: none;
+      -webkit-appearance: none;
+      background: var(--acid);
+      box-shadow: inset 0 0 0 0.4px rgba(0, 0, 0, 0.08);
+      cursor: pointer;
+    }
+
+    .cell[data-state="flagged"],
+    .cell[data-state="mine"],
+    .cell[data-state="wrong"] {
+      background: var(--mine-tile);
+    }
+
+    .cell[data-state="flagged"]::before,
+    .cell[data-state="mine"]::before,
+    .cell[data-state="wrong"]::before {
+      content: "";
+      position: absolute;
+      inset: 24%;
+      background-image: var(--mine-icon);
+      background-repeat: no-repeat;
+      background-position: center;
+      background-size: contain;
+    }
+
+    .cell[data-state="revealed"] {
+      background: transparent;
+      box-shadow: none;
+    }
+
+    .cell[data-state="revealed"][data-count]:not([data-count="0"])::after {
+      content: attr(data-count);
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      font-size: clamp(0.48rem, 0.68vw, 0.78rem);
+      font-weight: 800;
+      line-height: 1;
+      text-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.65),
+        0 0 8px rgba(255, 255, 255, 0.4);
+    }
+
+    .cell[data-state="revealed"][data-count="1"]::after { color: #0058d8; }
+    .cell[data-state="revealed"][data-count="2"]::after { color: #0f8a28; }
+    .cell[data-state="revealed"][data-count="3"]::after { color: #c12929; }
+    .cell[data-state="revealed"][data-count="4"]::after { color: #3a28b7; }
+    .cell[data-state="revealed"][data-count="5"]::after { color: #8b3414; }
+    .cell[data-state="revealed"][data-count="6"]::after { color: #17727a; }
+    .cell[data-state="revealed"][data-count="7"]::after { color: #1a1a1a; }
+    .cell[data-state="revealed"][data-count="8"]::after { color: #606060; }
+
+    .cell[data-state="mine"][data-exploded="true"] {
+      background: #ff4e4e;
+    }
+
+    .cell:focus-visible {
+      outline: 1px solid #000;
+      outline-offset: -1px;
+    }
+
+    .utility {
+      padding: 12px 18px 0;
+    }
+
+    .utility__row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.25rem 1.8rem;
+      align-items: center;
+    }
+
+    .utility__button,
+    .utility__value,
+    .utility__status {
+      font-size: 0.76rem;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      line-height: 1.25;
+    }
+
+    .utility__button {
+      padding: 0;
+      border: 0;
+      background: transparent;
+      cursor: pointer;
+    }
+
+    .utility__button[aria-pressed="true"] {
+      color: #118d00;
+    }
+
+    .utility__value strong {
+      font-weight: 800;
+    }
+
+    .utility__status {
+      margin: 0.7rem 0 0;
+    }
+
+    .noscript {
+      margin: 12px 18px 0;
+      font-size: 0.76rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    @media (max-width: 720px) {
+      html,
+      body {
+        height: 100%;
+        overflow: hidden;
+      }
+
+      body {
+        min-height: 100dvh;
+      }
+
+      .site {
+        width: 100%;
+        height: 100dvh;
+        min-height: 100dvh;
+        padding: 0;
+        display: grid;
+        grid-template-rows: auto 1fr;
+      }
+
+      .masthead {
+        padding: calc(env(safe-area-inset-top) + 2px) 10px 0;
+      }
+
+      .masthead__nav {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        align-items: end;
+        gap: 0;
+      }
+
+      .masthead__nav a {
+        padding: 10px 0 6px;
+        min-width: 0;
+        font-size: clamp(0.72rem, 3.8vw, 0.88rem);
+        letter-spacing: -0.08em;
+        line-height: 0.82;
+      }
+
+      main {
+        min-height: 0;
+        display: grid;
+        grid-template-rows: minmax(0, 1fr) auto;
+      }
+
+      .board-section {
+        min-height: 0;
+      }
+
+      .board-frame {
+        height: 100%;
+        aspect-ratio: auto;
+        min-height: 0;
+      }
+
+      .utility {
+        padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
+      }
+
+      .utility__row {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 0.35rem 0.55rem;
+        align-items: start;
+      }
+
+      .utility__button,
+      .utility__value,
+      .utility__status {
+        font-size: 0.56rem;
+        letter-spacing: 0.08em;
+        line-height: 1.12;
+      }
+
+      .utility__button,
+      .utility__value {
+        display: block;
+        min-width: 0;
+      }
+
+      .utility__value strong {
+        display: block;
+      }
+
+      .utility__status {
+        margin: 0.5rem 0 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .noscript {
+        margin: 8px 10px calc(8px + env(safe-area-inset-bottom));
+        font-size: 0.56rem;
+        letter-spacing: 0.08em;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        animation: none !important;
+        transition: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="site">
+    <header class="masthead">
+      <nav class="masthead__nav" aria-label="Main">
+        <a href="#boardSection">SHOP</a>
+        <a href="#boardSection">ARCHIVE</a>
+        <a href="#controls">ABOUT</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="board-section" id="boardSection" aria-labelledby="boardTitle">
+        <h1 id="boardTitle" class="sr-only">Playable minesweeper</h1>
+        <div class="board-frame">
+          <picture class="board-image">
+            <source
+              srcset="assets/espresso-560.webp 560w, assets/espresso-960.webp 960w, assets/espresso-1600.webp 1600w"
+              sizes="100vw"
+              type="image/webp"
+            >
+            <img
+              src="assets/espresso-1600.webp"
+              srcset="assets/espresso-560.webp 560w, assets/espresso-960.webp 960w, assets/espresso-1600.webp 1600w"
+              sizes="100vw"
+              alt="검은 컵 위로 흘러내리는 흰 왁스처럼 보이는 에스프레소 잔 이미지"
+              width="1600"
+              height="946"
+              decoding="async"
+              fetchpriority="high"
+            >
+          </picture>
+          <div id="board" class="board" aria-label="지뢰찾기 보드"></div>
+        </div>
+      </section>
+
+      <section class="utility" id="controls" aria-labelledby="controlsTitle">
+        <h2 id="controlsTitle" class="sr-only">게임 조작</h2>
+        <div class="utility__row">
+          <button id="restartButton" class="utility__button" type="button">RESET</button>
+          <button id="flagModeButton" class="utility__button" type="button" aria-pressed="false">FLAG OFF</button>
+          <span class="utility__value">MINES <strong id="mineCount">38</strong></span>
+          <span class="utility__value">TIME <strong id="timeCount">000</strong></span>
+          <span class="utility__value">STATE <strong id="stateCount">READY</strong></span>
+        </div>
+        <p id="statusLine" class="utility__status" aria-live="polite">OPEN A TILE. RIGHT CLICK TO FLAG.</p>
+      </section>
+    </main>
+
+    <noscript>
+      <p class="noscript">JAVASCRIPT IS REQUIRED FOR THE GAME.</p>
+    </noscript>
+  </div>
+
+  <script>
+    (() => {
+      const mobileQuery = window.matchMedia("(max-width: 720px)");
+      const boardElement = document.getElementById("board");
+      const mineCountElement = document.getElementById("mineCount");
+      const timeCountElement = document.getElementById("timeCount");
+      const stateCountElement = document.getElementById("stateCount");
+      const statusLineElement = document.getElementById("statusLine");
+      const restartButton = document.getElementById("restartButton");
+      const flagModeButton = document.getElementById("flagModeButton");
+
+      let config = getBoardConfig();
+      let totalCells = config.columns * config.rows;
+
+      const state = {
+        cells: [],
+        firstMove: true,
+        gameOver: false,
+        cleared: false,
+        revealed: 0,
+        flagged: 0,
+        seconds: 0,
+        timerId: 0,
+        flagMode: false
+      };
+
+      function getBoardConfig() {
+        if (mobileQuery.matches) {
+          return {
+            key: "compact",
+            columns: 18,
+            rows: 11,
+            mines: 34
+          };
+        }
+
+        return {
+          key: "wide",
+          columns: 30,
+          rows: 18,
+          mines: 84
+        };
+      }
+
+      function randomBelow(max) {
+        if (window.crypto && typeof window.crypto.getRandomValues === "function") {
+          const values = new Uint32Array(1);
+          const limit = Math.floor(0xffffffff / max) * max;
+          let value = 0;
+
+          do {
+            window.crypto.getRandomValues(values);
+            value = values[0];
+          } while (value >= limit);
+
+          return value % max;
+        }
+
+        return Math.floor(Math.random() * max);
+      }
+
+      function getNeighbors(index) {
+        const neighbors = [];
+        const row = Math.floor(index / config.columns);
+        const column = index % config.columns;
+
+        for (let rowOffset = -1; rowOffset <= 1; rowOffset += 1) {
+          for (let columnOffset = -1; columnOffset <= 1; columnOffset += 1) {
+            if (rowOffset === 0 && columnOffset === 0) {
+              continue;
+            }
+
+            const nextRow = row + rowOffset;
+            const nextColumn = column + columnOffset;
+
+            if (nextRow < 0 || nextRow >= config.rows || nextColumn < 0 || nextColumn >= config.columns) {
+              continue;
+            }
+
+            neighbors.push(nextRow * config.columns + nextColumn);
+          }
+        }
+
+        return neighbors;
+      }
+
+      function formatTime(seconds) {
+        return String(Math.min(seconds, 999)).padStart(3, "0");
+      }
+
+      function stopTimer() {
+        if (state.timerId) {
+          window.clearInterval(state.timerId);
+          state.timerId = 0;
+        }
+      }
+
+      function startTimer() {
+        stopTimer();
+        state.timerId = window.setInterval(() => {
+          state.seconds += 1;
+          timeCountElement.textContent = formatTime(state.seconds);
+        }, 1000);
+      }
+
+      function describeCell(cell) {
+        if (cell.flagged) {
+          return "깃발 표시한 셀";
+        }
+
+        if (!cell.revealed) {
+          return "닫힌 셀";
+        }
+
+        if (cell.mine) {
+          return "지뢰";
+        }
+
+        if (cell.adjacent > 0) {
+          return "주변 지뢰 " + cell.adjacent + "개";
+        }
+
+        return "비어 있는 셀";
+      }
+
+      function setStatus(message) {
+        statusLineElement.textContent = message;
+      }
+
+      function updateHud() {
+        mineCountElement.textContent = String(config.mines - state.flagged);
+        timeCountElement.textContent = formatTime(state.seconds);
+
+        if (state.cleared) {
+          stateCountElement.textContent = "CLEAR";
+        } else if (state.gameOver) {
+          stateCountElement.textContent = "BOOM";
+        } else if (state.firstMove) {
+          stateCountElement.textContent = "READY";
+        } else {
+          stateCountElement.textContent = "PLAY";
+        }
+      }
+
+      function renderCell(cell) {
+        const element = cell.element;
+
+        if (cell.mine && cell.revealed) {
+          element.dataset.state = "mine";
+          element.dataset.exploded = cell.exploded ? "true" : "false";
+          element.removeAttribute("data-count");
+        } else if (cell.wrongFlag) {
+          element.dataset.state = "wrong";
+          element.removeAttribute("data-count");
+          element.removeAttribute("data-exploded");
+        } else if (cell.flagged) {
+          element.dataset.state = "flagged";
+          element.removeAttribute("data-count");
+          element.removeAttribute("data-exploded");
+        } else if (cell.revealed) {
+          element.dataset.state = "revealed";
+
+          if (cell.adjacent > 0) {
+            element.dataset.count = String(cell.adjacent);
+          } else {
+            element.removeAttribute("data-count");
+          }
+
+          element.removeAttribute("data-exploded");
+        } else {
+          element.dataset.state = "hidden";
+          element.removeAttribute("data-count");
+          element.removeAttribute("data-exploded");
+        }
+
+        element.setAttribute("aria-label", describeCell(cell));
+      }
+
+      function expandFrom(startIndex) {
+        const queue = [startIndex];
+        const seen = new Set(queue);
+
+        while (queue.length > 0) {
+          const index = queue.pop();
+          const cell = state.cells[index];
+
+          if (!cell || cell.flagged || cell.mine) {
+            continue;
+          }
+
+          if (!cell.revealed) {
+            cell.revealed = true;
+            state.revealed += 1;
+            renderCell(cell);
+          }
+
+          if (cell.adjacent !== 0) {
+            continue;
+          }
+
+          const neighbors = getNeighbors(index);
+
+          for (let i = 0; i < neighbors.length; i += 1) {
+            const nextIndex = neighbors[i];
+            const nextCell = state.cells[nextIndex];
+
+            if (!nextCell.flagged && !nextCell.mine && !seen.has(nextIndex)) {
+              seen.add(nextIndex);
+              queue.push(nextIndex);
+            }
+          }
+        }
+      }
+
+      function finishAsLost(explodedIndex) {
+        state.gameOver = true;
+        stopTimer();
+
+        for (let index = 0; index < state.cells.length; index += 1) {
+          const cell = state.cells[index];
+
+          if (cell.mine) {
+            cell.revealed = true;
+            cell.exploded = index === explodedIndex;
+          } else if (cell.flagged) {
+            cell.wrongFlag = true;
+          }
+
+          renderCell(cell);
+        }
+
+        setStatus("BOOM. RESET TO PLAY AGAIN.");
+        updateHud();
+      }
+
+      function finishAsWon() {
+        state.cleared = true;
+        stopTimer();
+
+        for (let index = 0; index < state.cells.length; index += 1) {
+          const cell = state.cells[index];
+
+          if (cell.mine && !cell.flagged) {
+            cell.flagged = true;
+            state.flagged += 1;
+          }
+
+          renderCell(cell);
+        }
+
+        setStatus("CLEAR. THE IMAGE IS FULLY OPEN.");
+        updateHud();
+      }
+
+      function checkForClear() {
+        if (state.revealed === totalCells - config.mines) {
+          finishAsWon();
+        }
+      }
+
+      function plantMines(safeIndex) {
+        const blocked = new Set([safeIndex, ...getNeighbors(safeIndex)]);
+        const candidates = [];
+
+        for (let index = 0; index < totalCells; index += 1) {
+          if (!blocked.has(index)) {
+            candidates.push(index);
+          }
+        }
+
+        for (let index = candidates.length - 1; index > 0; index -= 1) {
+          const swapIndex = randomBelow(index + 1);
+          const temporary = candidates[index];
+          candidates[index] = candidates[swapIndex];
+          candidates[swapIndex] = temporary;
+        }
+
+        for (let mineIndex = 0; mineIndex < config.mines; mineIndex += 1) {
+          state.cells[candidates[mineIndex]].mine = true;
+        }
+
+        for (let index = 0; index < state.cells.length; index += 1) {
+          if (state.cells[index].mine) {
+            continue;
+          }
+
+          let count = 0;
+          const neighbors = getNeighbors(index);
+
+          for (let neighborIndex = 0; neighborIndex < neighbors.length; neighborIndex += 1) {
+            if (state.cells[neighbors[neighborIndex]].mine) {
+              count += 1;
+            }
+          }
+
+          state.cells[index].adjacent = count;
+        }
+      }
+
+      function revealCell(index) {
+        const cell = state.cells[index];
+
+        if (!cell || cell.flagged || cell.revealed || state.gameOver || state.cleared) {
+          return;
+        }
+
+        if (state.firstMove) {
+          plantMines(index);
+          state.firstMove = false;
+          startTimer();
+          setStatus("PLAYING. OPEN CELLS AND AVOID MINES.");
+        }
+
+        if (cell.mine) {
+          finishAsLost(index);
+          return;
+        }
+
+        expandFrom(index);
+        checkForClear();
+        updateHud();
+      }
+
+      function toggleFlag(index) {
+        const cell = state.cells[index];
+
+        if (!cell || cell.revealed || state.gameOver || state.cleared) {
+          return;
+        }
+
+        cell.flagged = !cell.flagged;
+        state.flagged += cell.flagged ? 1 : -1;
+        renderCell(cell);
+        updateHud();
+      }
+
+      function handleCellAction(index, forceFlagMode) {
+        if (forceFlagMode || state.flagMode) {
+          toggleFlag(index);
+          return;
+        }
+
+        revealCell(index);
+      }
+
+      function setFlagMode(active) {
+        state.flagMode = active;
+        flagModeButton.setAttribute("aria-pressed", String(active));
+        flagModeButton.textContent = active ? "FLAG ON" : "FLAG OFF";
+        setStatus(active ? "FLAG MODE ON." : "FLAG MODE OFF.");
+      }
+
+      function buildBoard() {
+        boardElement.style.setProperty("--columns", String(config.columns));
+        boardElement.style.setProperty("--rows", String(config.rows));
+        boardElement.replaceChildren();
+
+        const fragment = document.createDocumentFragment();
+        state.cells = [];
+
+        for (let index = 0; index < totalCells; index += 1) {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = "cell";
+          button.dataset.index = String(index);
+          button.setAttribute("aria-label", "닫힌 셀");
+
+          const cell = {
+            index,
+            mine: false,
+            revealed: false,
+            flagged: false,
+            wrongFlag: false,
+            exploded: false,
+            adjacent: 0,
+            element: button
+          };
+
+          state.cells.push(cell);
+          fragment.appendChild(button);
+        }
+
+        boardElement.appendChild(fragment);
+
+        for (let index = 0; index < state.cells.length; index += 1) {
+          renderCell(state.cells[index]);
+        }
+      }
+
+      function resetBoard() {
+        config = getBoardConfig();
+        totalCells = config.columns * config.rows;
+        stopTimer();
+        state.firstMove = true;
+        state.gameOver = false;
+        state.cleared = false;
+        state.revealed = 0;
+        state.flagged = 0;
+        state.seconds = 0;
+        state.flagMode = false;
+        buildBoard();
+        setFlagMode(false);
+        setStatus("OPEN A TILE. RIGHT CLICK TO FLAG.");
+        updateHud();
+      }
+
+      boardElement.addEventListener("click", (event) => {
+        const button = event.target.closest(".cell");
+
+        if (!button) {
+          return;
+        }
+
+        handleCellAction(Number(button.dataset.index), false);
+      });
+
+      boardElement.addEventListener("contextmenu", (event) => {
+        const button = event.target.closest(".cell");
+
+        if (!button) {
+          return;
+        }
+
+        event.preventDefault();
+        handleCellAction(Number(button.dataset.index), true);
+      });
+
+      boardElement.addEventListener("keydown", (event) => {
+        const button = event.target.closest(".cell");
+
+        if (!button) {
+          return;
+        }
+
+        const index = Number(button.dataset.index);
+
+        if (event.key === "f" || event.key === "F") {
+          event.preventDefault();
+          toggleFlag(index);
+        }
+
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          handleCellAction(index, false);
+        }
+      });
+
+      restartButton.addEventListener("click", resetBoard);
+      flagModeButton.addEventListener("click", () => {
+        setFlagMode(!state.flagMode);
+      });
+
+      if (typeof mobileQuery.addEventListener === "function") {
+        mobileQuery.addEventListener("change", () => {
+          const nextConfig = getBoardConfig();
+
+          if (nextConfig.key !== config.key) {
+            resetBoard();
+          }
+        });
+      }
+
+      resetBoard();
+    })();
+  </script>
+</body>
+</html>
