@@ -397,9 +397,9 @@ Asset URLs are already wired to this project's GitHub Pages hosting.
     var imageElement = root.querySelector(".iwms-image");
     var sourceElement = root.querySelector(".iwms-source");
 
-    var image560 = root.dataset.img560;
-    var image960 = root.dataset.img960;
-    var image1600 = root.dataset.img1600;
+    var image560 = root.getAttribute("data-img-560");
+    var image960 = root.getAttribute("data-img-960");
+    var image1600 = root.getAttribute("data-img-1600");
 
     sourceElement.srcset = image560 + " 560w, " + image960 + " 960w, " + image1600 + " 1600w";
     imageElement.src = image1600;
