@@ -21,6 +21,7 @@
       --ink: #000000;
       --acid: #27ff00;
       --mine-tile: rgba(248, 248, 248, 0.96);
+      --cell-label-size: 12px;
       --mine-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='8.6' fill='%23111111'/%3E%3Ccircle cx='12' cy='12' r='5.1' fill='%23f3f3f3'/%3E%3Ccircle cx='12' cy='12' r='2.95' fill='%23111111'/%3E%3Cg fill='%23111111'%3E%3Ccircle cx='12' cy='2.7' r='1.55'/%3E%3Ccircle cx='12' cy='21.3' r='1.55'/%3E%3Ccircle cx='2.7' cy='12' r='1.55'/%3E%3Ccircle cx='21.3' cy='12' r='1.55'/%3E%3Ccircle cx='5.1' cy='5.1' r='1.35'/%3E%3Ccircle cx='18.9' cy='5.1' r='1.35'/%3E%3Ccircle cx='5.1' cy='18.9' r='1.35'/%3E%3Ccircle cx='18.9' cy='18.9' r='1.35'/%3E%3C/g%3E%3C/svg%3E");
       --board-ratio: 1920 / 1135;
     }
@@ -184,7 +185,7 @@
       inset: 0;
       display: grid;
       place-items: center;
-      font-size: clamp(0.48rem, 0.68vw, 0.78rem);
+      font-size: var(--cell-label-size);
       font-weight: 800;
       line-height: 1;
       text-shadow:
@@ -589,6 +590,19 @@
         flagModeButton.disabled = !state.sessionArmed || sessionComplete;
       }
 
+      function updateBoardMetrics() {
+        const cellWidth = boardElement.clientWidth / config.columns;
+        const cellHeight = boardElement.clientHeight / config.rows;
+        const cellSize = Math.min(cellWidth, cellHeight);
+
+        if (!Number.isFinite(cellSize) || cellSize <= 0) {
+          return;
+        }
+
+        const labelSize = Math.max(9, Math.min(24, Math.round(cellSize * 0.7)));
+        document.documentElement.style.setProperty("--cell-label-size", labelSize + "px");
+      }
+
       function renderCell(cell) {
         const element = cell.element;
 
@@ -841,6 +855,7 @@
         }
 
         syncBoardAvailability();
+        requestAnimationFrame(updateBoardMetrics);
       }
 
       function resetBoard(armImmediately) {
@@ -938,6 +953,13 @@
             resetBoard(state.sessionArmed && !state.gameOver && !state.cleared);
           }
         });
+      }
+
+      if (typeof ResizeObserver === "function") {
+        new ResizeObserver(updateBoardMetrics).observe(boardElement);
+      } else {
+        window.addEventListener("resize", updateBoardMetrics, { passive: true });
+        window.addEventListener("orientationchange", updateBoardMetrics, { passive: true });
       }
 
       resetBoard(false);

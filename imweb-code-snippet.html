@@ -62,6 +62,7 @@ Asset URLs are already wired to this project's GitHub Pages hosting.
     --iwms-ink: #000000;
     --iwms-acid: #27ff00;
     --iwms-mine-tile: rgba(248, 248, 248, 0.96);
+    --iwms-cell-label-size: 12px;
     --iwms-vh: 1vh;
     --iwms-mine-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='8.6' fill='%23111111'/%3E%3Ccircle cx='12' cy='12' r='5.1' fill='%23f3f3f3'/%3E%3Ccircle cx='12' cy='12' r='2.95' fill='%23111111'/%3E%3Cg fill='%23111111'%3E%3Ccircle cx='12' cy='2.7' r='1.55'/%3E%3Ccircle cx='12' cy='21.3' r='1.55'/%3E%3Ccircle cx='2.7' cy='12' r='1.55'/%3E%3Ccircle cx='21.3' cy='12' r='1.55'/%3E%3Ccircle cx='5.1' cy='5.1' r='1.35'/%3E%3Ccircle cx='18.9' cy='5.1' r='1.35'/%3E%3Ccircle cx='5.1' cy='18.9' r='1.35'/%3E%3Ccircle cx='18.9' cy='18.9' r='1.35'/%3E%3C/g%3E%3C/svg%3E");
     position: relative;
@@ -207,7 +208,7 @@ Asset URLs are already wired to this project's GitHub Pages hosting.
     inset: 0;
     display: grid;
     place-items: center;
-    font-size: clamp(0.48rem, 0.68vw, 0.78rem);
+    font-size: var(--iwms-cell-label-size);
     font-weight: 800;
     line-height: 1;
     text-shadow:
@@ -580,6 +581,19 @@ Asset URLs are already wired to this project's GitHub Pages hosting.
       flagModeButton.disabled = !state.sessionArmed || sessionComplete;
     }
 
+    function updateBoardMetrics() {
+      var cellWidth = boardElement.clientWidth / config.columns;
+      var cellHeight = boardElement.clientHeight / config.rows;
+      var cellSize = Math.min(cellWidth, cellHeight);
+
+      if (!Number.isFinite(cellSize) || cellSize <= 0) {
+        return;
+      }
+
+      var labelSize = Math.max(9, Math.min(24, Math.round(cellSize * 0.7)));
+      root.style.setProperty("--iwms-cell-label-size", labelSize + "px");
+    }
+
     function renderCell(cell) {
       var element = cell.element;
 
@@ -832,6 +846,7 @@ Asset URLs are already wired to this project's GitHub Pages hosting.
       }
 
       syncBoardAvailability();
+      window.requestAnimationFrame(updateBoardMetrics);
     }
 
     function resetBoard(armImmediately) {
@@ -929,6 +944,13 @@ Asset URLs are already wired to this project's GitHub Pages hosting.
           resetBoard(state.sessionArmed && !state.gameOver && !state.cleared);
         }
       });
+    }
+
+    if (typeof ResizeObserver === "function") {
+      new ResizeObserver(updateBoardMetrics).observe(boardElement);
+    } else {
+      window.addEventListener("resize", updateBoardMetrics, { passive: true });
+      window.addEventListener("orientationchange", updateBoardMetrics, { passive: true });
     }
 
     resetBoard(false);
