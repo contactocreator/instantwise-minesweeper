@@ -150,6 +150,11 @@
       cursor: pointer;
     }
 
+    .cell:disabled {
+      opacity: 1;
+      cursor: default;
+    }
+
     .cell[data-state="flagged"],
     .cell[data-state="mine"],
     .cell[data-state="wrong"] {
@@ -233,6 +238,11 @@
       cursor: pointer;
     }
 
+    .utility__button:disabled {
+      opacity: 0.38;
+      cursor: default;
+    }
+
     .utility__button[aria-pressed="true"] {
       color: #118d00;
     }
@@ -314,7 +324,7 @@
 
       .utility__row {
         display: grid;
-        grid-template-columns: repeat(5, minmax(0, 1fr));
+        grid-template-columns: repeat(6, minmax(0, 1fr));
         gap: 0.35rem 0.55rem;
         align-items: start;
       }
@@ -397,13 +407,14 @@
       <section class="utility" id="controls" aria-labelledby="controlsTitle">
         <h2 id="controlsTitle" class="sr-only">게임 조작</h2>
         <div class="utility__row">
-          <button id="restartButton" class="utility__button" type="button">RESET</button>
+          <button id="startButton" class="utility__button" type="button">START</button>
+          <button id="retryButton" class="utility__button" type="button">RETRY</button>
           <button id="flagModeButton" class="utility__button" type="button" aria-pressed="false">FLAG OFF</button>
           <span class="utility__value">MINES <strong id="mineCount">38</strong></span>
           <span class="utility__value">TIME <strong id="timeCount">000</strong></span>
           <span class="utility__value">STATE <strong id="stateCount">READY</strong></span>
         </div>
-        <p id="statusLine" class="utility__status" aria-live="polite">OPEN A TILE. RIGHT CLICK TO FLAG.</p>
+        <p id="statusLine" class="utility__status" aria-live="polite">PRESS START TO BEGIN.</p>
       </section>
     </main>
 
@@ -420,7 +431,8 @@
       const timeCountElement = document.getElementById("timeCount");
       const stateCountElement = document.getElementById("stateCount");
       const statusLineElement = document.getElementById("statusLine");
-      const restartButton = document.getElementById("restartButton");
+      const startButton = document.getElementById("startButton");
+      const retryButton = document.getElementById("retryButton");
       const flagModeButton = document.getElementById("flagModeButton");
 
       let config = getBoardConfig();
@@ -431,6 +443,7 @@
         firstMove: true,
         gameOver: false,
         cleared: false,
+        sessionArmed: false,
         revealed: 0,
         flagged: 0,
         seconds: 0,
@@ -442,9 +455,9 @@
         if (mobileQuery.matches) {
           return {
             key: "compact",
-            columns: 18,
-            rows: 11,
-            mines: 34
+            columns: 20,
+            rows: 18,
+            mines: 62
           };
         }
 
@@ -545,7 +558,9 @@
         mineCountElement.textContent = String(config.mines - state.flagged);
         timeCountElement.textContent = formatTime(state.seconds);
 
-        if (state.cleared) {
+        if (!state.sessionArmed) {
+          stateCountElement.textContent = "START";
+        } else if (state.cleared) {
           stateCountElement.textContent = "CLEAR";
         } else if (state.gameOver) {
           stateCountElement.textContent = "BOOM";
@@ -554,6 +569,24 @@
         } else {
           stateCountElement.textContent = "PLAY";
         }
+      }
+
+      function syncBoardAvailability() {
+        const locked = !state.sessionArmed || state.gameOver || state.cleared;
+
+        boardElement.setAttribute("aria-disabled", String(locked));
+
+        for (let index = 0; index < state.cells.length; index += 1) {
+          state.cells[index].element.disabled = locked;
+        }
+      }
+
+      function syncActionButtons() {
+        const sessionComplete = state.gameOver || state.cleared;
+
+        startButton.disabled = state.sessionArmed && !sessionComplete;
+        retryButton.disabled = !state.sessionArmed && state.seconds === 0 && state.revealed === 0;
+        flagModeButton.disabled = !state.sessionArmed || sessionComplete;
       }
 
       function renderCell(cell) {
@@ -643,8 +676,10 @@
           renderCell(cell);
         }
 
-        setStatus("BOOM. RESET TO PLAY AGAIN.");
+        setStatus("BOOM. HIT RETRY TO PLAY AGAIN.");
         updateHud();
+        syncBoardAvailability();
+        syncActionButtons();
       }
 
       function finishAsWon() {
@@ -662,8 +697,10 @@
           renderCell(cell);
         }
 
-        setStatus("CLEAR. THE IMAGE IS FULLY OPEN.");
+        setStatus("CLEAR. HIT RETRY OR START AGAIN.");
         updateHud();
+        syncBoardAvailability();
+        syncActionButtons();
       }
 
       function checkForClear() {
@@ -714,7 +751,7 @@
       function revealCell(index) {
         const cell = state.cells[index];
 
-        if (!cell || cell.flagged || cell.revealed || state.gameOver || state.cleared) {
+        if (!state.sessionArmed || !cell || cell.flagged || cell.revealed || state.gameOver || state.cleared) {
           return;
         }
 
@@ -738,7 +775,7 @@
       function toggleFlag(index) {
         const cell = state.cells[index];
 
-        if (!cell || cell.revealed || state.gameOver || state.cleared) {
+        if (!state.sessionArmed || !cell || cell.revealed || state.gameOver || state.cleared) {
           return;
         }
 
@@ -757,11 +794,14 @@
         revealCell(index);
       }
 
-      function setFlagMode(active) {
+      function setFlagMode(active, silent) {
         state.flagMode = active;
         flagModeButton.setAttribute("aria-pressed", String(active));
         flagModeButton.textContent = active ? "FLAG ON" : "FLAG OFF";
-        setStatus(active ? "FLAG MODE ON." : "FLAG MODE OFF.");
+
+        if (!silent) {
+          setStatus(active ? "FLAG MODE ON." : "FLAG MODE OFF.");
+        }
       }
 
       function buildBoard() {
@@ -799,23 +839,48 @@
         for (let index = 0; index < state.cells.length; index += 1) {
           renderCell(state.cells[index]);
         }
+
+        syncBoardAvailability();
       }
 
-      function resetBoard() {
+      function resetBoard(armImmediately) {
         config = getBoardConfig();
         totalCells = config.columns * config.rows;
         stopTimer();
         state.firstMove = true;
         state.gameOver = false;
         state.cleared = false;
+        state.sessionArmed = Boolean(armImmediately);
         state.revealed = 0;
         state.flagged = 0;
         state.seconds = 0;
         state.flagMode = false;
         buildBoard();
-        setFlagMode(false);
+        setFlagMode(false, true);
+        setStatus(state.sessionArmed ? "OPEN A TILE. RIGHT CLICK TO FLAG." : "PRESS START TO BEGIN.");
+        updateHud();
+        syncActionButtons();
+      }
+
+      function startGame() {
+        if (state.sessionArmed && !state.gameOver && !state.cleared) {
+          return;
+        }
+
+        if (state.gameOver || state.cleared) {
+          resetBoard(true);
+          return;
+        }
+
+        state.sessionArmed = true;
         setStatus("OPEN A TILE. RIGHT CLICK TO FLAG.");
         updateHud();
+        syncBoardAvailability();
+        syncActionButtons();
+      }
+
+      function retryGame() {
+        resetBoard(true);
       }
 
       boardElement.addEventListener("click", (event) => {
@@ -859,7 +924,8 @@
         }
       });
 
-      restartButton.addEventListener("click", resetBoard);
+      startButton.addEventListener("click", startGame);
+      retryButton.addEventListener("click", retryGame);
       flagModeButton.addEventListener("click", () => {
         setFlagMode(!state.flagMode);
       });
@@ -869,12 +935,12 @@
           const nextConfig = getBoardConfig();
 
           if (nextConfig.key !== config.key) {
-            resetBoard();
+            resetBoard(state.sessionArmed && !state.gameOver && !state.cleared);
           }
         });
       }
 
-      resetBoard();
+      resetBoard(false);
     })();
   </script>
 </body>

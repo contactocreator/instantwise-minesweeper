@@ -39,13 +39,14 @@ Asset URLs are already wired to this project's GitHub Pages hosting.
       <section class="iwms-utility" id="iwms-controls-anchor" aria-labelledby="iwms-controls-title">
         <h2 id="iwms-controls-title" class="iwms-sr-only">Game controls</h2>
         <div class="iwms-utility-row">
-          <button class="iwms-button iwms-reset" type="button">RESET</button>
+          <button class="iwms-button iwms-start" type="button">START</button>
+          <button class="iwms-button iwms-retry" type="button">RETRY</button>
           <button class="iwms-button iwms-flag-toggle" type="button" aria-pressed="false">FLAG OFF</button>
           <span class="iwms-value">MINES <strong class="iwms-mine-count">38</strong></span>
           <span class="iwms-value">TIME <strong class="iwms-time-count">000</strong></span>
           <span class="iwms-value">STATE <strong class="iwms-state-count">READY</strong></span>
         </div>
-        <p class="iwms-status" aria-live="polite">OPEN A TILE. RIGHT CLICK TO FLAG.</p>
+        <p class="iwms-status" aria-live="polite">PRESS START TO BEGIN.</p>
       </section>
     </main>
 
@@ -172,6 +173,11 @@ Asset URLs are already wired to this project's GitHub Pages hosting.
     cursor: pointer;
   }
 
+  #iwms-root-20260731 .iwms-cell:disabled {
+    opacity: 1;
+    cursor: default;
+  }
+
   #iwms-root-20260731 .iwms-cell[data-state="flagged"],
   #iwms-root-20260731 .iwms-cell[data-state="mine"],
   #iwms-root-20260731 .iwms-cell[data-state="wrong"] {
@@ -256,6 +262,11 @@ Asset URLs are already wired to this project's GitHub Pages hosting.
     cursor: pointer;
   }
 
+  #iwms-root-20260731 .iwms-button:disabled {
+    opacity: 0.38;
+    cursor: default;
+  }
+
   #iwms-root-20260731 .iwms-button[aria-pressed="true"] {
     color: #118d00;
   }
@@ -335,7 +346,7 @@ Asset URLs are already wired to this project's GitHub Pages hosting.
 
     #iwms-root-20260731 .iwms-utility-row {
       display: grid;
-      grid-template-columns: repeat(5, minmax(0, 1fr));
+      grid-template-columns: repeat(6, minmax(0, 1fr));
       gap: 0.35rem 0.55rem;
       align-items: start;
     }
@@ -392,7 +403,8 @@ Asset URLs are already wired to this project's GitHub Pages hosting.
     var timeCountElement = root.querySelector(".iwms-time-count");
     var stateCountElement = root.querySelector(".iwms-state-count");
     var statusLineElement = root.querySelector(".iwms-status");
-    var restartButton = root.querySelector(".iwms-reset");
+    var startButton = root.querySelector(".iwms-start");
+    var retryButton = root.querySelector(".iwms-retry");
     var flagModeButton = root.querySelector(".iwms-flag-toggle");
     var imageElement = root.querySelector(".iwms-image");
     var sourceElement = root.querySelector(".iwms-source");
@@ -422,6 +434,7 @@ Asset URLs are already wired to this project's GitHub Pages hosting.
       firstMove: true,
       gameOver: false,
       cleared: false,
+      sessionArmed: false,
       revealed: 0,
       flagged: 0,
       seconds: 0,
@@ -433,9 +446,9 @@ Asset URLs are already wired to this project's GitHub Pages hosting.
       if (mobileQuery.matches) {
         return {
           key: "compact",
-          columns: 18,
-          rows: 11,
-          mines: 34
+          columns: 20,
+          rows: 18,
+          mines: 62
         };
       }
 
@@ -536,7 +549,9 @@ Asset URLs are already wired to this project's GitHub Pages hosting.
       mineCountElement.textContent = String(config.mines - state.flagged);
       timeCountElement.textContent = formatTime(state.seconds);
 
-      if (state.cleared) {
+      if (!state.sessionArmed) {
+        stateCountElement.textContent = "START";
+      } else if (state.cleared) {
         stateCountElement.textContent = "CLEAR";
       } else if (state.gameOver) {
         stateCountElement.textContent = "BOOM";
@@ -545,6 +560,24 @@ Asset URLs are already wired to this project's GitHub Pages hosting.
       } else {
         stateCountElement.textContent = "PLAY";
       }
+    }
+
+    function syncBoardAvailability() {
+      var locked = !state.sessionArmed || state.gameOver || state.cleared;
+
+      boardElement.setAttribute("aria-disabled", String(locked));
+
+      for (var index = 0; index < state.cells.length; index += 1) {
+        state.cells[index].element.disabled = locked;
+      }
+    }
+
+    function syncActionButtons() {
+      var sessionComplete = state.gameOver || state.cleared;
+
+      startButton.disabled = state.sessionArmed && !sessionComplete;
+      retryButton.disabled = !state.sessionArmed && state.seconds === 0 && state.revealed === 0;
+      flagModeButton.disabled = !state.sessionArmed || sessionComplete;
     }
 
     function renderCell(cell) {
@@ -634,8 +667,10 @@ Asset URLs are already wired to this project's GitHub Pages hosting.
         renderCell(cell);
       }
 
-      setStatus("BOOM. RESET TO PLAY AGAIN.");
+      setStatus("BOOM. HIT RETRY TO PLAY AGAIN.");
       updateHud();
+      syncBoardAvailability();
+      syncActionButtons();
     }
 
     function finishAsWon() {
@@ -653,8 +688,10 @@ Asset URLs are already wired to this project's GitHub Pages hosting.
         renderCell(cell);
       }
 
-      setStatus("CLEAR. THE IMAGE IS FULLY OPEN.");
+      setStatus("CLEAR. HIT RETRY OR START AGAIN.");
       updateHud();
+      syncBoardAvailability();
+      syncActionButtons();
     }
 
     function checkForClear() {
@@ -705,7 +742,7 @@ Asset URLs are already wired to this project's GitHub Pages hosting.
     function revealCell(index) {
       var cell = state.cells[index];
 
-      if (!cell || cell.flagged || cell.revealed || state.gameOver || state.cleared) {
+      if (!state.sessionArmed || !cell || cell.flagged || cell.revealed || state.gameOver || state.cleared) {
         return;
       }
 
@@ -729,7 +766,7 @@ Asset URLs are already wired to this project's GitHub Pages hosting.
     function toggleFlag(index) {
       var cell = state.cells[index];
 
-      if (!cell || cell.revealed || state.gameOver || state.cleared) {
+      if (!state.sessionArmed || !cell || cell.revealed || state.gameOver || state.cleared) {
         return;
       }
 
@@ -748,11 +785,14 @@ Asset URLs are already wired to this project's GitHub Pages hosting.
       revealCell(index);
     }
 
-    function setFlagMode(active) {
+    function setFlagMode(active, silent) {
       state.flagMode = active;
       flagModeButton.setAttribute("aria-pressed", String(active));
       flagModeButton.textContent = active ? "FLAG ON" : "FLAG OFF";
-      setStatus(active ? "FLAG MODE ON." : "FLAG MODE OFF.");
+
+      if (!silent) {
+        setStatus(active ? "FLAG MODE ON." : "FLAG MODE OFF.");
+      }
     }
 
     function buildBoard() {
@@ -790,23 +830,48 @@ Asset URLs are already wired to this project's GitHub Pages hosting.
       for (var renderIndex = 0; renderIndex < state.cells.length; renderIndex += 1) {
         renderCell(state.cells[renderIndex]);
       }
+
+      syncBoardAvailability();
     }
 
-    function resetBoard() {
+    function resetBoard(armImmediately) {
       config = getBoardConfig();
       totalCells = config.columns * config.rows;
       stopTimer();
       state.firstMove = true;
       state.gameOver = false;
       state.cleared = false;
+      state.sessionArmed = Boolean(armImmediately);
       state.revealed = 0;
       state.flagged = 0;
       state.seconds = 0;
       state.flagMode = false;
       buildBoard();
-      setFlagMode(false);
+      setFlagMode(false, true);
+      setStatus(state.sessionArmed ? "OPEN A TILE. RIGHT CLICK TO FLAG." : "PRESS START TO BEGIN.");
+      updateHud();
+      syncActionButtons();
+    }
+
+    function startGame() {
+      if (state.sessionArmed && !state.gameOver && !state.cleared) {
+        return;
+      }
+
+      if (state.gameOver || state.cleared) {
+        resetBoard(true);
+        return;
+      }
+
+      state.sessionArmed = true;
       setStatus("OPEN A TILE. RIGHT CLICK TO FLAG.");
       updateHud();
+      syncBoardAvailability();
+      syncActionButtons();
+    }
+
+    function retryGame() {
+      resetBoard(true);
     }
 
     boardElement.addEventListener("click", function (event) {
@@ -850,7 +915,8 @@ Asset URLs are already wired to this project's GitHub Pages hosting.
       }
     });
 
-    restartButton.addEventListener("click", resetBoard);
+    startButton.addEventListener("click", startGame);
+    retryButton.addEventListener("click", retryGame);
     flagModeButton.addEventListener("click", function () {
       setFlagMode(!state.flagMode);
     });
@@ -860,11 +926,11 @@ Asset URLs are already wired to this project's GitHub Pages hosting.
         var nextConfig = getBoardConfig();
 
         if (nextConfig.key !== config.key) {
-          resetBoard();
+          resetBoard(state.sessionArmed && !state.gameOver && !state.cleared);
         }
       });
     }
 
-    resetBoard();
+    resetBoard(false);
   })();
 </script>
