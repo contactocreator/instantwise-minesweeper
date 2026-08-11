@@ -435,6 +435,23 @@
       const startButton = document.getElementById("startButton");
       const retryButton = document.getElementById("retryButton");
       const flagModeButton = document.getElementById("flagModeButton");
+      const imageElement = document.querySelector(".board-image img");
+      const sourceElement = document.querySelector(".board-image source");
+
+      const rotateDelay = Math.max(1600, Number(window.instantwiseMinesweeperRotateMs) || 3200);
+      let galleryIndex = 0;
+      let galleryTimerId = 0;
+
+      // Add more entries here when more image assets are available.
+      const defaultGallery = [
+        {
+          src560: "assets/espresso-560.webp",
+          src960: "assets/espresso-960.webp",
+          src1600: "assets/espresso-1600.webp",
+          alt: "검은 컵 위로 흘러내리는 흰 왁스처럼 보이는 에스프레소 잔 이미지"
+        }
+      ];
+      const gallery = resolveGallery(window.instantwiseMinesweeperGallery, defaultGallery);
 
       let config = getBoardConfig();
       let totalCells = config.columns * config.rows;
@@ -468,6 +485,109 @@
           rows: 18,
           mines: 84
         };
+      }
+
+      function normalizeGalleryEntry(entry) {
+        if (typeof entry === "string") {
+          return {
+            src560: entry,
+            src960: entry,
+            src1600: entry,
+            alt: imageElement.alt
+          };
+        }
+
+        if (!entry || typeof entry !== "object") {
+          return null;
+        }
+
+        const fullSize = entry.src1600 || entry.src960 || entry.src560 || entry.src;
+
+        if (!fullSize) {
+          return null;
+        }
+
+        return {
+          src560: entry.src560 || entry.src960 || fullSize,
+          src960: entry.src960 || fullSize,
+          src1600: fullSize,
+          alt: entry.alt || imageElement.alt
+        };
+      }
+
+      function resolveGallery(rawGallery, fallbackGallery) {
+        const sourceGallery = Array.isArray(rawGallery) && rawGallery.length > 0 ? rawGallery : fallbackGallery;
+        const normalized = [];
+
+        for (let index = 0; index < sourceGallery.length; index += 1) {
+          const entry = normalizeGalleryEntry(sourceGallery[index]);
+
+          if (entry) {
+            normalized.push(entry);
+          }
+        }
+
+        return normalized.length > 0 ? normalized : fallbackGallery;
+      }
+
+      function getGallerySrcset(entry) {
+        return entry.src560 + " 560w, " + entry.src960 + " 960w, " + entry.src1600 + " 1600w";
+      }
+
+      function applyGalleryImage(index) {
+        if (gallery.length === 0) {
+          return;
+        }
+
+        galleryIndex = (index + gallery.length) % gallery.length;
+
+        const entry = gallery[galleryIndex];
+        const srcset = getGallerySrcset(entry);
+
+        sourceElement.srcset = srcset;
+        imageElement.srcset = srcset;
+        imageElement.src = entry.src1600;
+        imageElement.sizes = "100vw";
+        imageElement.alt = entry.alt;
+      }
+
+      function preloadGallery() {
+        if (gallery.length < 2) {
+          return;
+        }
+
+        for (let index = 0; index < gallery.length; index += 1) {
+          if (index === galleryIndex) {
+            continue;
+          }
+
+          const entry = gallery[index];
+          const preloadImage = new Image();
+          const srcset = getGallerySrcset(entry);
+
+          preloadImage.sizes = "100vw";
+          preloadImage.srcset = srcset;
+          preloadImage.src = entry.src1600;
+        }
+      }
+
+      function stopGalleryRotation() {
+        if (galleryTimerId) {
+          window.clearInterval(galleryTimerId);
+          galleryTimerId = 0;
+        }
+      }
+
+      function startGalleryRotation() {
+        stopGalleryRotation();
+
+        if (gallery.length < 2) {
+          return;
+        }
+
+        galleryTimerId = window.setInterval(() => {
+          applyGalleryImage(galleryIndex + 1);
+        }, rotateDelay);
       }
 
       function randomBelow(max) {
@@ -962,6 +1082,17 @@
         window.addEventListener("orientationchange", updateBoardMetrics, { passive: true });
       }
 
+      document.addEventListener("visibilitychange", () => {
+        if (document.hidden) {
+          stopGalleryRotation();
+        } else {
+          startGalleryRotation();
+        }
+      });
+
+      applyGalleryImage(0);
+      preloadGallery();
+      startGalleryRotation();
       resetBoard(false);
     })();
   </script>

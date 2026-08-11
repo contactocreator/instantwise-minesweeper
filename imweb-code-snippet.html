@@ -7,6 +7,7 @@ Asset URLs are already wired to this project's GitHub Pages hosting.
   data-img-560="https://contactocreator.github.io/instantwise-minesweeper/assets/espresso-560.webp"
   data-img-960="https://contactocreator.github.io/instantwise-minesweeper/assets/espresso-960.webp"
   data-img-1600="https://contactocreator.github.io/instantwise-minesweeper/assets/espresso-1600.webp"
+  data-rotate-ms="3200"
 >
   <div class="iwms-site">
     <header class="iwms-masthead">
@@ -413,11 +414,18 @@ Asset URLs are already wired to this project's GitHub Pages hosting.
     var image560 = root.getAttribute("data-img-560");
     var image960 = root.getAttribute("data-img-960");
     var image1600 = root.getAttribute("data-img-1600");
-
-    sourceElement.srcset = image560 + " 560w, " + image960 + " 960w, " + image1600 + " 1600w";
-    imageElement.src = image1600;
-    imageElement.srcset = sourceElement.srcset;
-    imageElement.sizes = "100vw";
+    var rotateDelay = Math.max(1600, Number(root.getAttribute("data-rotate-ms")) || Number(window.instantwiseMinesweeperRotateMs) || 3200);
+    var galleryIndex = 0;
+    var galleryTimerId = 0;
+    var defaultGallery = [
+      {
+        src560: image560,
+        src960: image960,
+        src1600: image1600,
+        alt: imageElement.alt
+      }
+    ];
+    var gallery = resolveGallery(window.instantwiseMinesweeperGallery, defaultGallery);
 
     function updateViewportHeight() {
       root.style.setProperty("--iwms-vh", (window.innerHeight * 0.01) + "px");
@@ -459,6 +467,109 @@ Asset URLs are already wired to this project's GitHub Pages hosting.
         rows: 18,
         mines: 84
       };
+    }
+
+    function normalizeGalleryEntry(entry) {
+      if (typeof entry === "string") {
+        return {
+          src560: entry,
+          src960: entry,
+          src1600: entry,
+          alt: imageElement.alt
+        };
+      }
+
+      if (!entry || typeof entry !== "object") {
+        return null;
+      }
+
+      var fullSize = entry.src1600 || entry.src960 || entry.src560 || entry.src;
+
+      if (!fullSize) {
+        return null;
+      }
+
+      return {
+        src560: entry.src560 || entry.src960 || fullSize,
+        src960: entry.src960 || fullSize,
+        src1600: fullSize,
+        alt: entry.alt || imageElement.alt
+      };
+    }
+
+    function resolveGallery(rawGallery, fallbackGallery) {
+      var sourceGallery = Array.isArray(rawGallery) && rawGallery.length > 0 ? rawGallery : fallbackGallery;
+      var normalized = [];
+
+      for (var index = 0; index < sourceGallery.length; index += 1) {
+        var entry = normalizeGalleryEntry(sourceGallery[index]);
+
+        if (entry) {
+          normalized.push(entry);
+        }
+      }
+
+      return normalized.length > 0 ? normalized : fallbackGallery;
+    }
+
+    function getGallerySrcset(entry) {
+      return entry.src560 + " 560w, " + entry.src960 + " 960w, " + entry.src1600 + " 1600w";
+    }
+
+    function applyGalleryImage(index) {
+      if (gallery.length === 0) {
+        return;
+      }
+
+      galleryIndex = (index + gallery.length) % gallery.length;
+
+      var entry = gallery[galleryIndex];
+      var srcset = getGallerySrcset(entry);
+
+      sourceElement.srcset = srcset;
+      imageElement.srcset = srcset;
+      imageElement.src = entry.src1600;
+      imageElement.sizes = "100vw";
+      imageElement.alt = entry.alt;
+    }
+
+    function preloadGallery() {
+      if (gallery.length < 2) {
+        return;
+      }
+
+      for (var index = 0; index < gallery.length; index += 1) {
+        if (index === galleryIndex) {
+          continue;
+        }
+
+        var entry = gallery[index];
+        var preloadImage = new Image();
+        var srcset = getGallerySrcset(entry);
+
+        preloadImage.sizes = "100vw";
+        preloadImage.srcset = srcset;
+        preloadImage.src = entry.src1600;
+      }
+    }
+
+    function stopGalleryRotation() {
+      if (galleryTimerId) {
+        window.clearInterval(galleryTimerId);
+        galleryTimerId = 0;
+      }
+    }
+
+    function startGalleryRotation() {
+      stopGalleryRotation();
+
+      if (gallery.length < 2) {
+        return;
+      }
+
+      galleryTimerId = window.setInterval(function () {
+        applyGalleryImage(galleryIndex + 1);
+      }, rotateDelay);
     }
 
     function randomBelow(max) {
@@ -953,6 +1064,17 @@ Asset URLs are already wired to this project's GitHub Pages hosting.
       window.addEventListener("orientationchange", updateBoardMetrics, { passive: true });
     }
 
+    document.addEventListener("visibilitychange", function () {
+      if (document.hidden) {
+        stopGalleryRotation();
+      } else {
+        startGalleryRotation();
+      }
+    });
+
+    applyGalleryImage(0);
+    preloadGallery();
+    startGalleryRotation();
     resetBoard(false);
   })();
 </script>
